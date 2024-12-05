@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class HospitalDaoImpl implements HospitalDao {
    private Database database;
@@ -38,20 +40,11 @@ public class HospitalDaoImpl implements HospitalDao {
 
     @Override
     public Hospital findHospitalById(Long id) {
-        try {
-            for (Hospital h : database.getHospitals()) {
-                if (h.getId() == id) {
-                    return h;
-                }
-            }
-
-            throw new Exception("Айди туура эмес");
-        }catch (Exception e){
-            System.out.println(e.getMessage());
-        }
-        return null;
+        return database.getHospitals().stream()
+                .filter(h -> h.getId()==(id))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Айди туура эмес"));
     }
-
     @Override
     public List<Hospital> getAllHospital() {
         return database.getHospitals();
@@ -59,46 +52,30 @@ public class HospitalDaoImpl implements HospitalDao {
 
     @Override
     public String deleteHospitalById(Long id) {
-        try{
-            for (Hospital g: database.getHospitals()){
-                if (g.getId()==(id)){
-                    database.getHospitals().remove(g);
-                    return g.getHospitalName() + " деген hospital очурулду ";
-                }
-            }
-            return "Мындай Hospital жок";
-        } catch (Exception e){
-            return e.getMessage();
-        }
-    }
+        Hospital hospitalToDelete = database.getHospitals().stream()
+                .filter(h -> h.getId()==(id))
+                .findFirst()
+                .orElse(null);
 
+        if (hospitalToDelete != null) {
+            database.getHospitals().remove(hospitalToDelete);
+            return hospitalToDelete.getHospitalName() + " деген hospital өчүрүлдү";
+        }
+        return "Мындай Hospital жок";
+    }
     @Override
     public Map<String, Hospital> getAllHospitalByAddress(String address) {
-        Map<String, Hospital> result=new HashMap<>();
-
-        try{
-
-            for (Hospital hospital:database.getHospitals()) {
-            if (hospital.getAddress().equals(address)){
-                result.put(hospital.getHospitalName(),hospital);
-
-            }
-            }
-        }
-
-        catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-            return result;
+        return database.getHospitals().stream()
+                .filter(h -> h.getAddress().equals(address))
+                .collect(Collectors.toMap(Hospital::getHospitalName, h -> h));
     }
 
     @Override
     public List<Patient> getAllPatientFromHospital(Long id) {
-        for (Hospital h:Database.hospitals) {
-            if (h.getId()==id){
-                return h.getPatients();
-            }
-        }
-        return null;
+        return database.getHospitals().stream()
+                .filter(h -> h.getId()==(id))
+                .map(Hospital::getPatients)
+                .findFirst()
+                .orElse(null);
     }
 }
