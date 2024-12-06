@@ -7,66 +7,51 @@ import Models.Patient;
 import dao.GenericServiceDao;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PatientDaoImpl implements GenericServiceDao<Patient> {
     @Override
     public String add(Long hospitalId, Patient patient) {
 
             try {
-                for (Hospital h : Database.hospitals) {
-                    if (h.getId() == hospitalId) {
-                        h.getPatients().add(patient);
-                        return "Patient кошулду";
-                    }
-
-                    }
-                throw new Exception("Мындай айдидеги Hospital жок");
-
-            } catch (Exception e) {
+                Hospital hospital = Database.hospitals.stream().
+                        filter(h -> h.getId() == hospitalId).
+                        findFirst().
+                        orElseThrow(() -> new RuntimeException("Айди туура эмес"));
+                hospital.getPatients().add(patient);
+                return "кошулду";
+            }catch (Exception e){
                 System.out.println(e.getMessage());
+                return "Мындай Hospital жок";
             }
-            return "";
         }
 
     @Override
     public void removeById(Long id) {
-        boolean isremoved=false;
+
         try {
-            for (Hospital h : Database.hospitals) {
-                for (Patient d : h.getPatients()) {
-                    if (d.getId() == id) {
-                        h.getPatients().remove(d);
-                        System.out.println("Очурулду");
-                        isremoved=true;
-                        break;
-                    }
-                }
-            }   if (!isremoved) {
-                throw new Exception("Мындай айдидеги patient жок");
-            }}catch (Exception e){
-            System.out.println(e.getMessage());
-        }
-
+            Hospital hospital = Database.hospitals.stream()
+                    .filter(hospital1 -> hospital1.getPatients().stream()
+                            .anyMatch(patient -> patient.getId() == (id)))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Айди туура эмес"));
+            hospital.getPatients().removeIf(patient -> patient.getId() == id);
+            System.out.println("Очурулду");
+        }catch (Exception e){
+            System.out.println(e.getMessage());}
     }
-
 
     @Override
     public String updateById(Long id, String newName) {
         try {
-            boolean u =false;
-            for (Hospital h : Database.hospitals) {
-                for (Patient d : h.getPatients()) {
-                    if (d.getId() == id) {
-                        d.setFirstName(newName);
-                        u=true;
-                        return "updated";
-                    }
-                }
-            }
-            if (!u){
-                throw  new Exception("Мындай айдидеги patient жок");
-            }
-
+           Patient patient = Database.hospitals.stream()
+                   .flatMap(hospital -> hospital.getPatients().stream())
+                   .filter(patient1 -> patient1.getId()==id)
+                   .findFirst()
+                   .orElseThrow(()->new RuntimeException("Мындай patient жок"));
+                   patient.setFirstName(newName);
+            System.out.println("updated");
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }return "";
@@ -74,61 +59,78 @@ public class PatientDaoImpl implements GenericServiceDao<Patient> {
 
     public String addPatientsToHospital(Long id, List<Patient> patients) {
         try {
-            for (Hospital h : Database.hospitals) {
-                if (h.getId() == id) {
-                    h.getPatients().addAll(patients);
-                    return "added";
-                }
-            }
-            throw new Exception("Мындай айдидеги Hospital жок");
+           Hospital hospital = Database.hospitals.stream()
+                   .filter(hospital1 -> hospital1.getId()==id)
+                   .findFirst()
+                   .orElse(null);
+           hospital.getPatients().addAll(patients);
+               return "кошулду";
         }catch (Exception e){
             System.out.println(e.getMessage());
+            return "Мындай Hospital жок";
         }
-        return null;
+//        try {
+//            for (Hospital h : Database.hospitals) {
+//                if (h.getId() == id) {
+//                    h.getPatients().addAll(patients);
+//                    return "added";
+//                }
+//            }
+//            throw new Exception("Мындай айдидеги Hospital жок");
+//        }catch (Exception e){
+//            System.out.println(e.getMessage());
+//        }
+//        return null;
     }
 
     public Patient getPatientById(Long id) {
         try {
-            for (Hospital h : Database.hospitals) {
-                for (Patient p : h.getPatients()) {
-                    if (p.getId() == id) {
-                        return p;
-                    }
-                }
-            }
-            throw new Exception("Мындай айдидеги Patient жок");
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-        return null;
-    }
 
-    public Map<Integer, Patient> getPatientByAge() {
-        Map<Integer, Patient> result = new HashMap<>();
-        try {
-            for (Hospital h : Database.hospitals) {
-                for (Patient p : h.getPatients()) {
-                    result.put(p.getAge(), p);
-                }
 
-            }
-
+            return Database.hospitals.stream()
+                    .flatMap(hospital -> hospital.getPatients().stream())
+                    .filter(patient -> patient.getId() == id)
+                    .findFirst()
+                    .orElseThrow(()->new RuntimeException("мындай айдидеги patient жок"));
         }catch (Exception e){
             System.out.println(e.getMessage());
+            return null;
         }
-        return result;
+    }
+//
+//    public Map<String, Hospital> getAllHospitalByAddress(String address) {
+//        return database.getHospitals().stream()
+//                .filter(h -> h.getAddress().equals(address))
+//                .collect(Collectors.toMap(Hospital::getHospitalName, h -> h));
+//    }
+
+    public Map<Integer, Patient> getPatientByAge() {
+        try {
+            return Database.hospitals.stream()
+                    .flatMap(hospital -> hospital.getPatients().stream())
+                    .collect(Collectors.toMap(
+                            Patient::getAge,
+                            patient -> patient
+                    ));
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return new HashMap<>();
+        }
     }
 
     public List<Patient> sortPatientsByAge(String ascOrDesc) {
-        List<Patient> allPatients = new ArrayList<>();
-        for (Hospital h : Database.hospitals) {
-            allPatients.addAll(h.getPatients());
             if ("asc".equals(ascOrDesc)) {
-                Collections.sort(allPatients, Patient.sortByageAsk);
+                return Database.hospitals.stream()
+                        .flatMap(hospital -> hospital.getPatients().stream())
+                        .sorted(Comparator.comparing(Patient::getAge))
+                        .collect(Collectors.toList());
             } else if ("desk".equals(ascOrDesc)) {
-                Collections.sort(allPatients, Patient.sortByagedDesk);
+                return Database.hospitals.stream()
+                        .flatMap(hospital -> hospital.getPatients().stream())
+                        .sorted(Comparator.comparing(Patient::getAge).reversed())
+                        .collect(Collectors.toList());
             }
-        }
-        return allPatients;
+
+        return null;
     }
 }

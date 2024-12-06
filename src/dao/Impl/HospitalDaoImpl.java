@@ -55,7 +55,7 @@ public class HospitalDaoImpl implements HospitalDao {
         Hospital hospitalToDelete = database.getHospitals().stream()
                 .filter(h -> h.getId()==(id))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new RuntimeException("Айди туура эмес"));
 
         if (hospitalToDelete != null) {
             database.getHospitals().remove(hospitalToDelete);
@@ -76,6 +76,6 @@ public class HospitalDaoImpl implements HospitalDao {
                 .filter(h -> h.getId()==(id))
                 .map(Hospital::getPatients)
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new RuntimeException("Айди туура эмес"));
     }
 }

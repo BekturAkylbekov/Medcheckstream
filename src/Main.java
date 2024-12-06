@@ -198,14 +198,10 @@ public class Main {
                     System.out.println("Введите ID департамента:");
                     Long idDepartment = scanner.nextLong();
 
-                    System.out.println("Введите ID докторов через запятую:");
-                    scanner.nextLine(); // Считываем остатки строки
-                    String ids = scanner.nextLine();
-                    List<Long> doctorIds = new ArrayList<>();
-                    for (String id : ids.split(",")) {
-                        doctorIds.add(Long.parseLong(id.trim()));
-                    }
-                    String result = doctorService.assignDoctorToDepartment(idDepartment, doctorIds);
+                    System.out.println("Введите ID доктора:");
+                    Long doctorId = scanner.nextLong();
+
+                    String result = doctorService.assignDoctorToDepartment(idDepartment, List.of(doctorId));
                     System.out.println(result);
                 break;}
                 case 19:{
@@ -222,6 +218,11 @@ public class Main {
                     System.out.println("Hospital дын айдисин жазыныз");
                     Long id = scanner2.nextLong();
                     List <Patient> patients = new ArrayList<>();
+                    patients.add(new Patient(GeneratedId.patientId(),"Bektur","Akylbekov",20,Gender.MALE));
+                    patients.add(new Patient(GeneratedId.patientId(),"Rahmanlul","Akylbekov",21,Gender.MALE));
+                    patients.add(new Patient(GeneratedId.patientId(),"Azmar","Akylbekov",14,Gender.MALE));
+                    patients.add(new Patient(GeneratedId.patientId(),"Adilet","Akylbekov",33,Gender.MALE));
+                    patients.add(new Patient(GeneratedId.patientId(),"Elaman","Akylbekov",11,Gender.MALE));
                     System.out.println(patientService.addPatientsToHospital(id,patients));
                 break;}
                 case 22:{
